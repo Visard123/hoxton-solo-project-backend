@@ -11,6 +11,24 @@ datasource db {
 }
 
 
+model Restaurant{
+  id Int @id @default(autoincrement())
+  name String
+  image String
+
+}
+
+model Food{
+  id Int @id @default(autoincrement())
+  title String @unique
+  image String
+  price  Float
+  restaurantId Int
+  orders Order[]
+  
+  
+}
+
 model User {
   id Int @id @default(autoincrement())
   name String
@@ -18,14 +36,6 @@ model User {
   password String 
   orders Order[]
 }
-model Food{
-  id Int @id @default(autoincrement())
-  title String @unique
-  image String
-  price  Float
-  orders Order[]
-}
-
 
 
 model Order{
@@ -37,3 +47,5 @@ model Order{
   foods Food @relation(fields: [foodId], references: [id])
 
 }
+
+
