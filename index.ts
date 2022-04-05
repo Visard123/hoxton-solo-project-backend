@@ -67,7 +67,11 @@ app.post("/signup", async (req, res) => {
         password: hash,
       },
     });
-    res.send({ user, token: createToken(user.id) });
+    if (user) {
+      res.send({ user, token: createToken(user.id) });
+    } else {
+      throw Error;
+    }
   } catch (err) {
     // @ts-ignore
     res.status(400).send({ error: err.message });
@@ -92,6 +96,69 @@ app.post("/login", async (req, res) => {
   } catch (err) {
     // @ts-ignore
     res.status(400).send({ error: "User or password invalid" });
+  }
+});
+
+app.post("/order", async (req, res) => {
+  const { foodId, userId, quantity } = req.body;
+
+  try {
+    const createdOrder = await prisma.order.create({
+      data: {
+        quantity,
+        userId,
+        foodId,
+      },
+      include: {
+        users: true,
+        foods: true,
+      },
+    });
+    res.send(createdOrder);
+  } catch (err) {
+    // @ts-ignore
+    res.status(400).send(err.message);
+  }
+});
+
+app.patch("/order/:id", async (req, res) => {
+  const { id, quantity } = req.body;
+
+  try {
+    const updateOrder = await prisma.order.update({
+      include: {
+        users: true,
+        foods: true,
+      },
+      where: {
+        id: id,
+      },
+      data: {
+        quantity: quantity,
+      },
+    });
+    res.send(updateOrder);
+  } catch (err) {
+    // @ts-ignore
+    res.status(400).send(err.message);
+  }
+});
+
+app.delete("/order/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    // const {email, title} = req.body
+    const deleteOrder = await prisma.order.delete({ where: { id: id } });
+
+    console.log(deleteOrder);
+    if (deleteOrder) {
+      res.send({ message: "Order deleted succesfully" });
+    } else {
+      res.send({ message: "There is no order with that id" });
+    }
+  } catch (err) {
+    // @ts-ignore
+    res.status(400).send(err.message);
   }
 });
 
