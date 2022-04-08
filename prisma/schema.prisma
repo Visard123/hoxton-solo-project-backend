@@ -10,42 +10,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-model Restaurant{
-  id Int @id @default(autoincrement())
-  name String
+model Restaurant {
+  id    Int    @id @default(autoincrement())
+  name  String
   image String
+  food  Food[]
 
 }
 
-model Food{
-  id Int @id @default(autoincrement())
-  title String @unique
-  image String
-  price  Float
+model Food {
+  id           Int         @id @default(autoincrement())
+  title        String      @unique
+  image        String
+  price        Float
   restaurantId Int
-  orders Order[]
-  
-  
+  restorant    Restaurant  @relation(fields: [restaurantId], references: [id])
+  orderItems   OrderItem[]
+
+
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  name String
-  email String @unique
-  password String 
-  orders Order[]
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
+  password String
+  orders   Order[]
 }
 
-
-model Order{
-  id Int @id @default(autoincrement())
+model OrderItem {
+  id       Int   @id @default(autoincrement())
+  foodId   Int
+  food     Food  @relation(fields: [foodId], references: [id])
+  order    Order @relation(fields: [orderId], references: [id])
+  orderId  Int
   quantity Int
-  userId Int 
-  users User @relation(fields: [userId], references: [id])
-  foodId Int
-  foods Food @relation(fields: [foodId], references: [id])
-
 }
 
+model Order {
+  id Int @id @default(autoincrement())
 
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+
+
+  orderItems OrderItem[]
+
+}

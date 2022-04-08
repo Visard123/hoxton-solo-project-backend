@@ -53,7 +53,7 @@ const foods: Prisma.FoodCreateInput[] = [
     restaurantId: 2,
   },
   {
-    title: "Double & Trouble ",
+    title: "Double & Trouble",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/OPA%20DoubleTrouble.png",
     price: 500,
@@ -117,7 +117,7 @@ const foods: Prisma.FoodCreateInput[] = [
     restaurantId: 5,
   },
   {
-    title: "Shrimp Tempura ",
+    title: "Shrimp Tempura",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/lift_shrimp%20tempura.jpg",
     price: 900,
@@ -131,14 +131,14 @@ const foods: Prisma.FoodCreateInput[] = [
     restaurantId: 6,
   },
   {
-    title: "Beef Carpaccio ",
+    title: "Beef Carpaccio",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/lift_beef%20carpaccio.jpg",
     price: 1900,
     restaurantId: 6,
   },
   {
-    title: "Ebi Uramaki ",
+    title: "Ebi Uramaki",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/Ebi%20Avokado%20Maki_0%20nama%20sushi.png",
     price: 900,
@@ -152,49 +152,49 @@ const foods: Prisma.FoodCreateInput[] = [
     restaurantId: 7,
   },
   {
-    title: "Karai Ebi ",
+    title: "Karai Ebi",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/karai%20ebi%20nama%20sushi.jpg",
     price: 500,
     restaurantId: 7,
   },
   {
-    title: "Berxolle Qingji ",
+    title: "Berxolle Qingji",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/berxolle%20qingji.jpg",
     price: 1200,
     restaurantId: 8,
   },
   {
-    title: "Radiko e Finok Zgare ",
+    title: "Radiko e Finok Zgare",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/radikio%20e%20finok%20zgare.jpg",
     price: 700,
     restaurantId: 8,
   },
   {
-    title: "Sallata e Dites ",
+    title: "Sallata e Dites",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/SALLATE%20(30).jpg",
     price: 600,
     restaurantId: 8,
   },
   {
-    title: "Perfect Combo ",
+    title: "Perfect Combo",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/Milky%20perfect%20combo%20doesnt%20exi-.png",
     price: 470,
     restaurantId: 9,
   },
   {
-    title: "Angel ",
+    title: "Angel",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/Milky%20angel.png",
     price: 630,
     restaurantId: 9,
   },
   {
-    title: "Take me Home Tonight ",
+    title: "Take me Home Tonight",
     image:
       "https://images.weserv.nl/?url=prev.baboon.al/restadmin/product_images/take%20me%20home%202night_MILKY.jpeg",
     price: 480,
@@ -254,9 +254,27 @@ const users: Prisma.UserCreateInput[] = [
     email: "John@mail",
     password: bcrypt.hashSync("John"),
     orders: {
-      create: [{ foods: { connect: { title: "Bacon Wrap" } }, quantity: 1 }],
+      create: [
+        {
+          orderItems: {
+            create: [
+              {
+                food: {
+                  connect: { title: "Take me Home Tonight" },
+                },
+                quantity: 2,
+              },
+              {
+                food: { connect: { title: "Angel" } },
+                quantity: 2,
+              },
+            ],
+          },
+        },
+      ],
     },
   },
+
   {
     name: "Lionel",
     email: "Lionel@mail",

@@ -28,7 +28,7 @@ async function getUserFromToken(token: string) {
   return user;
 }
 
-app.get("validate", async (req, res) => {
+app.get("/validate", async (req, res) => {
   const token = req.headers.authorization || "";
   try {
     const user = await getUserFromToken(token);
@@ -45,13 +45,24 @@ app.get("/foods", async (req, res) => {
 
 app.get("/users", async (req, res) => {
   const users = await prisma.user.findMany({
-    include: { orders: { include: { foods: true } } },
+    include: {
+      orders: { include: { orderItems: { include: { food: true } } } },
+    },
   });
   res.send(users);
 });
 
 app.get("/restaurants", async (req, res) => {
   const restaurants = await prisma.restaurant.findMany({});
+  res.send(restaurants);
+});
+
+app.get("/restaurants/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const restaurants = await prisma.restaurant.findFirst({
+    where: { id },
+    include: { food: true },
+  });
   res.send(restaurants);
 });
 
@@ -65,6 +76,7 @@ app.post("/signup", async (req, res) => {
         name: name,
         email: email,
         password: hash,
+        orders: { create: [{}] },
       },
     });
     if (user) {
@@ -81,37 +93,63 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
+    console.log(req);
     const user = await prisma.user.findUnique({
-      //@ts-ignore
-      where: { email: email },
-      include: { orders: { include: { foods: true } } },
+      where: { email },
+      include: {
+        orders: { include: { orderItems: { include: { food: true } } } },
+      },
     });
     //@ts-ignore
     const passwordMatches = bcrypt.compareSync(password, user.password);
     if (user && passwordMatches) {
       res.send({ user, token: createToken(user.id) });
     } else {
-      throw Error("Something went wrong!");
+      throw Error;
     }
   } catch (err) {
     // @ts-ignore
-    res.status(400).send({ error: "User or password invalid" });
+    res.status(400).send({ error: err.message });
   }
 });
 
-app.post("/order", async (req, res) => {
-  const { foodId, userId, quantity } = req.body;
-
+app.get("/getCurrentOrder", async (req, res) => {
+  const token = req.headers.authorization || "";
   try {
-    const createdOrder = await prisma.order.create({
-      data: {
-        quantity,
-        userId,
-        foodId,
+    const user = await getUserFromToken(token);
+    const orders = await prisma.order.findMany({
+      where: {
+        userId: user?.id,
       },
       include: {
-        users: true,
-        foods: true,
+        orderItems: {
+          include: {
+            food: true,
+          },
+        },
+      },
+    });
+    if (user && orders) {
+      const lastOrder = orders.pop();
+      res.send(lastOrder);
+    } else {
+      throw Error;
+    }
+  } catch (err) {
+    //@ts-ignore
+    res.status(400).send({ error: err.message });
+  }
+});
+
+app.post("/orderItem", async (req, res) => {
+  const { foodId, orderId, quantity } = req.body;
+
+  try {
+    const createdOrder = await prisma.orderItem.create({
+      data: { quantity, foodId, orderId },
+      include: {
+        food: true,
+        order: true,
       },
     });
     res.send(createdOrder);
@@ -121,14 +159,14 @@ app.post("/order", async (req, res) => {
   }
 });
 
-app.patch("/order/:id", async (req, res) => {
+app.patch("/orderItem/:id", async (req, res) => {
   const { id, quantity } = req.body;
 
   try {
-    const updateOrder = await prisma.order.update({
+    const updateOrder = await prisma.orderItem.update({
       include: {
-        users: true,
-        foods: true,
+        food: true,
+        order: true,
       },
       where: {
         id: id,
@@ -144,11 +182,104 @@ app.patch("/order/:id", async (req, res) => {
   }
 });
 
-app.delete("/order/:id", async (req, res) => {
+app.patch("/increaseQuantity", async (req, res) => {
+  const { itemId } = req.body;
+
+  try {
+    const updatedItem = await prisma.orderItem.update({
+      include: {
+        order: { include: { orderItems: { include: { food: true } } } },
+      },
+      where: {
+        id: itemId,
+      },
+      data: {
+        quantity: { increment: 1 },
+      },
+    });
+
+    res.send(updatedItem.order);
+  } catch (err) {
+    // @ts-ignore
+    res.status(400).send(err.message);
+  }
+});
+
+app.post("/addToOrder", async (req, res) => {
+  const { foodId, orderId } = req.body;
+
+  try {
+    const orderitem = await prisma.orderItem.findFirst({
+      where: { foodId: foodId, orderId: orderId },
+    });
+    if (orderitem) {
+      const updatedItem = await prisma.orderItem.update({
+        include: {
+          order: { include: { orderItems: { include: { food: true } } } },
+        },
+        where: {
+          id: orderitem.id,
+        },
+        data: {
+          quantity: { increment: 1 },
+        },
+      });
+
+      res.send(updatedItem.order);
+    } else {
+      const createOrderItem = await prisma.orderItem.create({
+        //@ts-ignore
+        data: {
+          order: { connect: { id: orderId } },
+          food: { connect: { id: foodId } },
+          quantity: 1,
+        },
+        include: {
+          order: { include: { orderItems: { include: { food: true } } } },
+        },
+      });
+      //@ts-ignore
+      res.send(createOrderItem.order);
+    }
+  } catch (err) {
+    // @ts-ignore
+    res.status(400).send(err.message);
+  }
+});
+
+app.patch("/decreaseQuantity", async (req, res) => {
+  const { itemId } = req.body;
+
+  try {
+    const updatedItem = await prisma.orderItem.update({
+      where: {
+        id: itemId,
+      },
+      data: {
+        quantity: { decrement: 1 },
+      },
+    });
+    if (updatedItem.quantity === 0) {
+      await prisma.orderItem.delete({ where: { id: itemId } });
+    }
+    const order = await prisma.order.findFirst({
+      where: { id: updatedItem.orderId },
+      include: {
+        orderItems: { include: { food: true } },
+      },
+    });
+    res.send(order);
+  } catch (err) {
+    // @ts-ignore
+    res.status(400).send(err.message);
+  }
+});
+
+app.delete("/orderItem/:id", async (req, res) => {
   const id = Number(req.params.id);
   try {
     // const {email, title} = req.body
-    const deleteOrder = await prisma.order.delete({ where: { id: id } });
+    const deleteOrder = await prisma.orderItem.delete({ where: { id: id } });
 
     console.log(deleteOrder);
     if (deleteOrder) {
